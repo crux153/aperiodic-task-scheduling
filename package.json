@@ -1,7 +1,8 @@
 {
   "name": "aperiodic-task-scheduling",
   "version": "0.1.0",
-  "private": true,
+  "description": "Example of how aperiodic task scheduling works in realtime system",
+  "license": "MIT",
   "dependencies": {
     "react": "^16.13.1",
     "react-dom": "^16.13.1"
