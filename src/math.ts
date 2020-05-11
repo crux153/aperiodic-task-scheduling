@@ -28,3 +28,8 @@ export function lcm(array: number[]): number {
   }
   return num;
 }
+
+// Average of integers
+export function average(array: number[]): number {
+  return array.reduce((acc, val) => acc + val, 0) / array.length;
+}
