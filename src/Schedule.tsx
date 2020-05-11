@@ -23,7 +23,11 @@ export function Schedule({ schedule }: { schedule: (string | null)[] }) {
         {schedule.map((color, idx) => (
           <div
             key={idx}
-            style={{ width: 50, height: 50, backgroundColor: color ?? "#fff" }}
+            style={{
+              width: "100%",
+              height: 50,
+              backgroundColor: color ?? "#fff",
+            }}
           />
         ))}
       </div>

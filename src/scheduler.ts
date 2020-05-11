@@ -20,8 +20,12 @@ export interface PollingServer {
 
 export function backgroundScheduler(
   inputPeriodicTasks: PeriodicTask[],
-  inputAperiodicTasks: AperiodicTask[]
-) {
+  inputAperiodicTasks: AperiodicTask[],
+  totalPeriods?: number
+): {
+  schedule: (string | null)[];
+  waitingTimes: number[];
+} {
   // Deep clone
   const periodicTasks: PeriodicTask[] = JSON.parse(
     JSON.stringify(inputPeriodicTasks)
@@ -31,7 +35,11 @@ export function backgroundScheduler(
   );
 
   const hyperPeriod = lcm(periodicTasks.map((task) => task.period));
-  const schedule: (string | null)[] = new Array(hyperPeriod).fill(null);
+  if (!totalPeriods) {
+    totalPeriods = hyperPeriod;
+  }
+
+  const schedule: (string | null)[] = new Array(totalPeriods).fill(null);
   const waitingTimes: number[] = [];
 
   // Order by shortest period
@@ -53,7 +61,7 @@ export function backgroundScheduler(
   });
 
   for (const task of periodicTasks) {
-    const numberOfExecution = hyperPeriod / task.period;
+    const numberOfExecution = totalPeriods / task.period;
     for (let idx = 0; idx < numberOfExecution; idx++) {
       let computation = task.computationTime;
 
@@ -87,14 +95,27 @@ export function backgroundScheduler(
     }
   }
 
+  // If there's any aperiodic tasks left then try again with higher total periods
+  if (waitingTimes.length !== inputAperiodicTasks.length) {
+    return backgroundScheduler(
+      inputPeriodicTasks,
+      inputAperiodicTasks,
+      totalPeriods + hyperPeriod
+    );
+  }
+
   return { schedule, waitingTimes };
 }
 
 export function pollingServerScheduler(
   inputPeriodicTasks: PeriodicTask[],
   inputAperiodicTasks: AperiodicTask[],
-  inputPollingServer: PollingServer
-) {
+  inputPollingServer: PollingServer,
+  totalPeriods?: number
+): {
+  schedule: (string | null)[];
+  waitingTimes: number[];
+} {
   // Deep clone
   const periodicTasks: PeriodicTask[] = JSON.parse(
     JSON.stringify(inputPeriodicTasks)
@@ -107,8 +128,13 @@ export function pollingServerScheduler(
   );
 
   const allPeriodicTasks = [...periodicTasks, pollingServer];
+
   const hyperPeriod = lcm(allPeriodicTasks.map((task) => task.period));
-  const schedule: (string | null)[] = new Array(hyperPeriod).fill(null);
+  if (!totalPeriods) {
+    totalPeriods = hyperPeriod;
+  }
+
+  const schedule: (string | null)[] = new Array(totalPeriods).fill(null);
   const waitingTimes: number[] = [];
 
   // Order by shortest period
@@ -130,7 +156,7 @@ export function pollingServerScheduler(
   });
 
   for (const task of allPeriodicTasks) {
-    const numberOfExecution = hyperPeriod / task.period;
+    const numberOfExecution = totalPeriods / task.period;
     for (let idx = 0; idx < numberOfExecution; idx++) {
       const section = idx * task.period;
       const nextSection = section + task.period;
@@ -169,6 +195,16 @@ export function pollingServerScheduler(
         }
       }
     }
+  }
+
+  // If there's any aperiodic tasks left then try again with higher total periods
+  if (waitingTimes.length !== inputAperiodicTasks.length) {
+    return pollingServerScheduler(
+      inputPeriodicTasks,
+      inputAperiodicTasks,
+      pollingServer,
+      totalPeriods + hyperPeriod
+    );
   }
 
   return { schedule, waitingTimes };
